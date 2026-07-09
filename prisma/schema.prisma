@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model User {
+  id           String            @id @default(cuid())
+  email        String            @unique
+  passwordHash String
+  name         String?
+  memberships  DocumentMember[]
+  versions     DocumentVersion[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@map("users")
+}
+
+model Document {
+  id        String            @id @default(cuid())
+  title     String
+  state     Bytes?
+  members   DocumentMember[]
+  versions  DocumentVersion[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@map("documents")
+}
+
+model DocumentMember {
+  id         String   @id @default(cuid())
+  documentId String
+  userId     String
+  role       Role
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, userId])
+  @@index([userId])
+  @@map("document_members")
+}
+
+model DocumentVersion {
+  id          String   @id @default(cuid())
+  documentId  String
+  snapshot    Bytes
+  label       String?
+  createdById String
+  createdAt   DateTime @default(now())
+
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy User     @relation(fields: [createdById], references: [id])
+
+  @@index([documentId])
+  @@map("document_versions")
+}
