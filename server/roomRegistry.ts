@@ -38,7 +38,7 @@ export class RoomRegistry {
     }
 
     const ydoc = new Y.Doc();
-    const state = await this.persistence.load(documentId);
+    const state = await this.loadWithRetry(documentId);
     if (state) {
       Y.applyUpdate(ydoc, state, "persistence-load");
     }
@@ -111,7 +111,7 @@ export class RoomRegistry {
     }
     room.persistTimer = setTimeout(() => {
       room.persistTimer = null;
-      void this.persistence.save(documentId, Y.encodeStateAsUpdate(room.ydoc));
+      void this.persistSafely(documentId, room);
     }, PERSIST_DEBOUNCE_MS);
   }
 
@@ -120,12 +120,48 @@ export class RoomRegistry {
       clearTimeout(room.persistTimer);
       room.persistTimer = null;
     }
-    void this.persistence.save(documentId, Y.encodeStateAsUpdate(room.ydoc)).finally(() => {
+    void this.persistSafely(documentId, room).finally(() => {
       const current = this.rooms.get(documentId);
       if (current === room && current.connections.size === 0) {
         this.rooms.delete(documentId);
       }
     });
+  }
+
+  /**
+   * Neon (and serverless Postgres generally) can suspend its compute after
+   * idle time and forcibly terminate open connections (SQLSTATE 57P01).
+   * A `save`/`load` racing that termination would otherwise become an
+   * unhandled promise rejection — fatal for this long-running process by
+   * default in Node — taking down every connected room, not just this one.
+   * One retry covers the common case (Prisma reconnects transparently on
+   * the next query); if it still fails we log and move on, since the room
+   * stays correct in memory and the next debounced edit will try again.
+   */
+  private async loadWithRetry(documentId: string): Promise<Uint8Array | null> {
+    try {
+      return await this.persistence.load(documentId);
+    } catch (error) {
+      console.error(`[collab] load failed for doc=${documentId}, retrying once`, error);
+      return this.persistence.load(documentId);
+    }
+  }
+
+  private async persistSafely(documentId: string, room: Room): Promise<void> {
+    const state = Y.encodeStateAsUpdate(room.ydoc);
+    try {
+      await this.persistence.save(documentId, state);
+    } catch (error) {
+      console.error(`[collab] save failed for doc=${documentId}, retrying once`, error);
+      try {
+        await this.persistence.save(documentId, state);
+      } catch (retryError) {
+        console.error(
+          `[collab] save retry also failed for doc=${documentId}; in-memory state is unaffected, next edit will retry`,
+          retryError,
+        );
+      }
+    }
   }
 }
 

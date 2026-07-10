@@ -216,4 +216,61 @@ describe("collab server", () => {
       provider.destroy();
     });
   });
+
+  describe("with a persistently failing database", () => {
+    let brokenHandle: CollabServerHandle;
+    let brokenBaseUrl: string;
+
+    beforeAll(async () => {
+      // Simulates Neon (or any Postgres) refusing every query, e.g. its
+      // compute is suspended and won't wake up in time. The server must
+      // close the affected connection cleanly rather than hang forever or
+      // let the failure become an unhandled rejection that crashes every
+      // other room on the same process.
+      const alwaysFails = {
+        load: () => Promise.reject(new Error("terminating connection due to administrator command")),
+        save: () => Promise.reject(new Error("terminating connection due to administrator command")),
+      };
+      brokenHandle = createCollabServer(alwaysFails);
+      await new Promise<void>((resolve) => brokenHandle.httpServer.listen(0, resolve));
+      const address = brokenHandle.httpServer.address() as AddressInfo;
+      brokenBaseUrl = `ws://127.0.0.1:${address.port}`;
+    });
+
+    afterAll(async () => {
+      await brokenHandle.close();
+    });
+
+    it("closes the connection instead of hanging or crashing the server", async () => {
+      const documentId = `doc-${randomUUID()}`;
+      const token = await signCollabToken({ userId: "unlucky-user", documentId, role: "OWNER" });
+      const socket = new NodeWebSocket(`${brokenBaseUrl}/${documentId}?token=${token}`);
+
+      await new Promise<void>((resolve, reject) => {
+        socket.on("open", () => resolve());
+        socket.on("error", reject);
+      });
+
+      const closeCode = await new Promise<number>((resolve) => {
+        socket.on("close", (code) => resolve(code));
+      });
+      expect(closeCode).toBe(1011);
+
+      // If the earlier failure had escaped as an unhandled rejection, this
+      // whole test process would have crashed before reaching this point —
+      // reaching a second, independent connection attempt is itself part
+      // of the proof that the server (and process) survived.
+      const secondDocumentId = `doc-${randomUUID()}`;
+      const secondToken = await signCollabToken({ userId: "another-user", documentId: secondDocumentId, role: "OWNER" });
+      const secondSocket = new NodeWebSocket(`${brokenBaseUrl}/${secondDocumentId}?token=${secondToken}`);
+      await new Promise<void>((resolve, reject) => {
+        secondSocket.on("open", () => resolve());
+        secondSocket.on("error", reject);
+      });
+      const secondCloseCode = await new Promise<number>((resolve) => {
+        secondSocket.on("close", (code) => resolve(code));
+      });
+      expect(secondCloseCode).toBe(1011);
+    });
+  });
 });

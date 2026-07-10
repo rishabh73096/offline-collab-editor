@@ -12,7 +12,7 @@ import {
   encoding,
   decoding,
 } from "../lib/sync/protocol";
-import type { RoomRegistry, RoomConnection } from "./roomRegistry";
+import type { RoomRegistry, RoomConnection, Room } from "./roomRegistry";
 
 export interface ConnectionContext {
   documentId: string;
@@ -47,7 +47,20 @@ export async function handleConnection(
   const queue = (raw: Buffer | ArrayBuffer | Buffer[]) => pending.push(toUint8Array(raw));
   ws.on("message", queue);
 
-  const room = await registry.getOrCreateRoom(ctx.documentId);
+  let room: Room;
+  try {
+    room = await registry.getOrCreateRoom(ctx.documentId);
+  } catch (error) {
+    // A dropped/suspended database connection (e.g. Neon idling out) must
+    // not become an unhandled rejection here — this function isn't awaited
+    // by its caller, so an uncaught throw would crash the whole process,
+    // dropping every other connected room along with it. Close just this
+    // socket; the client's own reconnect/backoff will retry.
+    console.error(`[collab] failed to load room for doc=${ctx.documentId}; closing connection`, error);
+    ws.off("message", queue);
+    ws.close(1011, "Server error loading document");
+    return;
+  }
 
   const conn: RoomConnection = {
     userId: ctx.userId,
