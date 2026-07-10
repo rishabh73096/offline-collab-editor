@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Role } from "@prisma/client";
 import { useDocument } from "@/hooks/useDocument";
 import { DocumentEditor } from "@/components/editor/DocumentEditor";
+import { SyncStatusBadge } from "@/components/documents/SyncStatusBadge";
 
 const ROLE_STYLES: Record<Role, string> = {
   OWNER: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
@@ -32,7 +33,10 @@ export function DocumentWorkspace({
             </Link>
             <h1 className="text-xl font-semibold text-zinc-950 dark:text-zinc-50">{title}</h1>
           </div>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ROLE_STYLES[role]}`}>{role}</span>
+          <div className="flex items-center gap-2">
+            <SyncStatusBadge />
+            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ROLE_STYLES[role]}`}>{role}</span>
+          </div>
         </header>
 
         {isReady && ytext ? (
