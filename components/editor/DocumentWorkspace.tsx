@@ -5,6 +5,7 @@ import type { Role } from "@prisma/client";
 import { useDocument } from "@/hooks/useDocument";
 import { DocumentEditor } from "@/components/editor/DocumentEditor";
 import { SyncStatusBadge } from "@/components/documents/SyncStatusBadge";
+import { SaveVersionButton } from "@/components/versions/SaveVersionButton";
 
 const ROLE_STYLES: Record<Role, string> = {
   OWNER: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
@@ -36,6 +37,13 @@ export function DocumentWorkspace({
           <div className="flex items-center gap-2">
             <SyncStatusBadge />
             <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ROLE_STYLES[role]}`}>{role}</span>
+            <Link
+              href={`/documents/${documentId}/history`}
+              className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              History
+            </Link>
+            {role !== "VIEWER" && <SaveVersionButton documentId={documentId} />}
           </div>
         </header>
 

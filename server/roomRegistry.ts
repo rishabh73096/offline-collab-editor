@@ -105,6 +105,24 @@ export class RoomRegistry {
     }
   }
 
+  /**
+   * Bypasses the debounce for actions where "eventually persisted" isn't
+   * good enough: a version restore needs the resulting state durably saved
+   * before the caller reports success, not left to whatever the next
+   * PERSIST_DEBOUNCE_MS tick happens to catch.
+   */
+  async persistNow(documentId: string): Promise<void> {
+    const room = this.rooms.get(documentId);
+    if (!room) {
+      return;
+    }
+    if (room.persistTimer) {
+      clearTimeout(room.persistTimer);
+      room.persistTimer = null;
+    }
+    await this.persistSafely(documentId, room);
+  }
+
   private schedulePersist(documentId: string, room: Room) {
     if (room.persistTimer) {
       clearTimeout(room.persistTimer);

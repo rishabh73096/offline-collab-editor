@@ -8,7 +8,7 @@ import type * as Y from "yjs";
  * clobber a concurrent edit from another the way a full-text overwrite
  * would once this is wired into real-time collaboration.
  */
-export function applyTextareaEdit(ytext: Y.Text, oldValue: string, newValue: string): void {
+export function applyTextareaEdit(ytext: Y.Text, oldValue: string, newValue: string, origin: unknown = "textarea-input"): void {
   if (oldValue === newValue) {
     return;
   }
@@ -37,7 +37,7 @@ export function applyTextareaEdit(ytext: Y.Text, oldValue: string, newValue: str
   };
 
   if (ytext.doc) {
-    ytext.doc.transact(applyOps, "textarea-input");
+    ytext.doc.transact(applyOps, origin);
   } else {
     applyOps();
   }

@@ -3,6 +3,7 @@ import { WebSocketServer } from "ws";
 import { verifyCollabToken } from "../lib/auth/collabToken";
 import { RoomRegistry } from "./roomRegistry";
 import { handleConnection } from "./connection";
+import { tryHandleInternalRequest } from "./internalApi";
 import type { DocumentPersistence } from "./persistence";
 
 // Generous ceiling for a single CRDT update / awareness ping — far below
@@ -24,9 +25,14 @@ export interface CollabServerHandle {
 export function createCollabServer(persistence: DocumentPersistence): CollabServerHandle {
   const registry = new RoomRegistry(persistence);
 
-  const httpServer = createServer((_req, res) => {
-    res.writeHead(200, { "content-type": "text/plain" });
-    res.end("offline-collab-editor collab server\n");
+  const httpServer = createServer((req, res) => {
+    void (async () => {
+      const handled = await tryHandleInternalRequest(req, res, registry);
+      if (!handled) {
+        res.writeHead(200, { "content-type": "text/plain" });
+        res.end("offline-collab-editor collab server\n");
+      }
+    })();
   });
 
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
