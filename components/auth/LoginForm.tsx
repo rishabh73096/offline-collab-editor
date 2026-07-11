@@ -4,9 +4,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail, Lock } from "lucide-react";
+import { Mail } from "lucide-react";
 import { toast } from "sonner";
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 export function LoginForm() {
   const router = useRouter();
@@ -54,6 +55,7 @@ export function LoginForm() {
           <input
             id="email"
             type="email"
+            placeholder="you@example.com"
             autoComplete="email"
             aria-invalid={Boolean(errors.email)}
             className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
@@ -67,17 +69,13 @@ export function LoginForm() {
         <label htmlFor="password" className="text-sm font-medium text-ink-soft">
           Password
         </label>
-        <div className="relative">
-          <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-faint" />
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            aria-invalid={Boolean(errors.password)}
-            className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
-            {...register("password")}
-          />
-        </div>
+        <PasswordInput
+          id="password"
+          placeholder="Enter your password"
+          autoComplete="current-password"
+          ariaInvalid={Boolean(errors.password)}
+          registration={register("password")}
+        />
         {errors.password && <p className="text-sm text-brick">{errors.password.message}</p>}
       </div>
 
