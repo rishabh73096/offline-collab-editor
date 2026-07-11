@@ -20,5 +20,4 @@ process.on("uncaughtException", (error) => {
 const { httpServer } = createCollabServer(createPrismaPersistence(prisma));
 
 httpServer.listen(PORT, () => {
-  console.log(`[collab] listening on :${PORT}`);
 });

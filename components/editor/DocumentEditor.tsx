@@ -31,13 +31,15 @@ export function DocumentEditor({ ytext, readOnly }: { ytext: Y.Text; readOnly: b
   }
 
   return (
-    <textarea
-      value={value}
-      onChange={handleChange}
-      readOnly={readOnly}
-      aria-label="Document content"
-      placeholder="Start typing..."
-      className="min-h-[60vh] w-full resize-none rounded-lg border border-zinc-300 bg-white p-4 font-mono text-sm text-zinc-950 outline-none focus:border-zinc-500 disabled:opacity-70 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-    />
+    <div className="rounded-2xl border border-border bg-surface shadow-sm focus-within:border-accent focus-within:ring-2 focus-within:ring-accent-soft">
+      <textarea
+        value={value}
+        onChange={handleChange}
+        readOnly={readOnly}
+        aria-label="Document content"
+        placeholder="Start typing…"
+        className="min-h-[60vh] w-full resize-none rounded-2xl bg-transparent p-6 font-serif text-base leading-relaxed text-ink outline-none placeholder:text-ink-faint disabled:opacity-70 sm:p-8 sm:text-lg"
+      />
+    </div>
   );
 }

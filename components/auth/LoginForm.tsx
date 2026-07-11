@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Mail, Lock, TriangleAlert } from "lucide-react";
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
 
 export function LoginForm() {
@@ -34,37 +35,44 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex w-full max-w-sm flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="email" className="text-sm font-medium text-ink-soft">
           Email
         </label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          aria-invalid={Boolean(errors.email)}
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-          {...register("email")}
-        />
-        {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
+        <div className="relative">
+          <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            aria-invalid={Boolean(errors.email)}
+            className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+            {...register("email")}
+          />
+        </div>
+        {errors.email && <p className="text-sm text-brick">{errors.email.message}</p>}
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="password" className="text-sm font-medium text-ink-soft">
           Password
         </label>
-        <input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          aria-invalid={Boolean(errors.password)}
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-950 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-          {...register("password")}
-        />
-        {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
+        <div className="relative">
+          <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            aria-invalid={Boolean(errors.password)}
+            className="w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-9 text-sm text-ink outline-none focus:border-accent focus:ring-2 focus:ring-accent-soft"
+            {...register("password")}
+          />
+        </div>
+        {errors.password && <p className="text-sm text-brick">{errors.password.message}</p>}
       </div>
 
       {formError && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="flex items-center gap-2 rounded-lg bg-brick-soft px-3 py-2 text-sm text-brick">
+          <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
           {formError}
         </p>
       )}
@@ -72,9 +80,9 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-colors hover:bg-[#383838] disabled:opacity-60 dark:hover:bg-[#ccc]"
+        className="mt-2 rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-surface transition-colors hover:bg-accent-hover disabled:opacity-60"
       >
-        {isSubmitting ? "Signing in..." : "Sign in"}
+        {isSubmitting ? "Signing in…" : "Sign in"}
       </button>
     </form>
   );

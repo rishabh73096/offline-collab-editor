@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import type { Role } from "@prisma/client";
+import { ArrowLeft, History, Eye, Loader2 } from "lucide-react";
 import { useDocument } from "@/hooks/useDocument";
 import { DocumentEditor } from "@/components/editor/DocumentEditor";
 import { SyncStatusBadge } from "@/components/documents/SyncStatusBadge";
 import { SaveVersionButton } from "@/components/versions/SaveVersionButton";
 
 const ROLE_STYLES: Record<Role, string> = {
-  OWNER: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
-  EDITOR: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  VIEWER: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+  OWNER: "bg-moss-soft text-moss",
+  EDITOR: "bg-teal-soft text-teal",
+  VIEWER: "bg-surface-soft text-ink-soft",
 };
 
 export function DocumentWorkspace({
@@ -25,22 +26,27 @@ export function DocumentWorkspace({
   const { ytext, isReady } = useDocument(documentId);
 
   return (
-    <div className="flex flex-1 flex-col bg-zinc-50 px-6 py-8 dark:bg-black sm:px-10">
+    <div className="flex flex-1 flex-col px-6 py-8 sm:px-10">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <header className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <Link href="/documents" className="text-sm text-zinc-500 hover:underline dark:text-zinc-400">
-              &larr; Back to documents
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-1.5">
+            <Link
+              href="/documents"
+              className="inline-flex items-center gap-1.5 text-sm text-ink-faint transition-colors hover:text-ink-soft"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              Documents
             </Link>
-            <h1 className="text-xl font-semibold text-zinc-950 dark:text-zinc-50">{title}</h1>
+            <h1 className="font-serif text-xl font-semibold text-ink">{title}</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <SyncStatusBadge />
             <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ROLE_STYLES[role]}`}>{role}</span>
             <Link
               href={`/documents/${documentId}/history`}
-              className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:border-border-strong hover:text-ink"
             >
+              <History className="h-3.5 w-3.5" aria-hidden="true" />
               History
             </Link>
             {role !== "VIEWER" && <SaveVersionButton documentId={documentId} />}
@@ -50,21 +56,24 @@ export function DocumentWorkspace({
         {isReady && ytext ? (
           <>
             {role === "VIEWER" && (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400" role="status">
+              <p
+                className="flex items-center gap-2 rounded-lg bg-surface-soft px-3 py-2 text-sm text-ink-soft"
+                role="status"
+              >
+                <Eye className="h-4 w-4 shrink-0" aria-hidden="true" />
                 You have view-only access to this document.
               </p>
             )}
             <DocumentEditor ytext={ytext} readOnly={role === "VIEWER"} />
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">
-              Stored locally on this device. Works offline.
-            </p>
+            <p className="text-xs text-ink-faint">Stored locally on this device. Works offline.</p>
           </>
         ) : (
           <div
-            className="flex min-h-[60vh] items-center justify-center text-sm text-zinc-500 dark:text-zinc-400"
+            className="flex min-h-[60vh] items-center justify-center gap-2 text-sm text-ink-faint"
             role="status"
           >
-            Loading from local storage...
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Loading from local storage…
           </div>
         )}
       </div>

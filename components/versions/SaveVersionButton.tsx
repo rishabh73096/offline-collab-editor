@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Save, Check, Loader2, TriangleAlert } from "lucide-react";
 
 export function SaveVersionButton({ documentId }: { documentId: string }) {
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -24,21 +25,22 @@ export function SaveVersionButton({ documentId }: { documentId: string }) {
     }
   }
 
-  const labels: Record<typeof status, string> = {
-    idle: "Save version",
-    saving: "Saving…",
-    saved: "Saved",
-    error: "Failed — retry",
-  };
+  const config = {
+    idle: { icon: Save, label: "Save version" },
+    saving: { icon: Loader2, label: "Saving…" },
+    saved: { icon: Check, label: "Saved" },
+    error: { icon: TriangleAlert, label: "Failed — retry" },
+  }[status];
 
   return (
     <button
       type="button"
       onClick={() => void handleSave()}
       disabled={status === "saving"}
-      className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+      className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:border-border-strong hover:text-ink disabled:opacity-60"
     >
-      {labels[status]}
+      <config.icon className={`h-3.5 w-3.5 ${status === "saving" ? "animate-spin" : ""}`} aria-hidden="true" />
+      {config.label}
     </button>
   );
 }

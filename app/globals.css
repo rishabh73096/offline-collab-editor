@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
+/*
+  Paper & ink: a warm, editorial palette built for a writing tool, not a
+  SaaS dashboard. One confident accent (rust) instead of a purple/blue
+  gradient, plus three muted functional hues (moss, teal, ochre) and one
+  warm red (brick) that read as a deliberate family, not default swatches.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --paper: #faf6ee;
+  --surface: #ffffff;
+  --surface-soft: #f3ecdd;
+  --ink: #211d17;
+  --ink-soft: #6b6152;
+  --ink-faint: #9c9280;
+  --border: #e5dbc5;
+  --border-strong: #d3c6a8;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --accent: #b0431e;
+  --accent-hover: #96350f;
+  --accent-soft: #f5ddcd;
+  --accent-soft-border: #e9bc9e;
+
+  --moss: #3f6b4a;
+  --moss-soft: #dce9da;
+  --teal: #2f5f72;
+  --teal-soft: #d8e6ea;
+  --ochre: #a9761c;
+  --ochre-soft: #f1e3c2;
+  --brick: #9b3a32;
+  --brick-soft: #f2dad6;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #15120c;
+    --surface: #1f1a12;
+    --surface-soft: #292117;
+
+    --ink: #f3ecdd;
+    --ink-soft: #b8ab90;
+    --ink-faint: #786c55;
+
+    --border: #382f1e;
+    --border-strong: #4c4028;
+
+    --accent: #e07a45;
+    --accent-hover: #ef9260;
+    --accent-soft: #3a2318;
+    --accent-soft-border: #5c3420;
+
+    --moss: #86b98c;
+    --moss-soft: #24352a;
+    --teal: #79b0c5;
+    --teal-soft: #1f333a;
+    --ochre: #d6a94a;
+    --ochre-soft: #3a2f14;
+    --brick: #d98077;
+    --brick-soft: #3a211e;
   }
 }
 
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-border: var(--accent-soft-border);
+
+  --color-moss: var(--moss);
+  --color-moss-soft: var(--moss-soft);
+  --color-teal: var(--teal);
+  --color-teal-soft: var(--teal-soft);
+  --color-ochre: var(--ochre);
+  --color-ochre-soft: var(--ochre-soft);
+  --color-brick: var(--brick);
+  --color-brick-soft: var(--brick-soft);
+
+  --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-lora);
+  --font-mono: var(--font-geist-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+}
+
+/* Subtle paper grain so flat fills don't read as generic solid color. */
+.bg-grain {
+  background-image: radial-gradient(var(--border-strong) 0.5px, transparent 0.5px);
+  background-size: 14px 14px;
 }

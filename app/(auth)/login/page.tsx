@@ -1,22 +1,24 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { AuthLayout } from "@/components/auth/AuthLayout";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 export default function LoginPage() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 bg-zinc-50 px-6 py-16 dark:bg-black">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-semibold text-zinc-950 dark:text-zinc-50">Sign in</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+    <AuthLayout
+      title="Welcome back"
+      subtitle={
+        <>
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium text-zinc-950 underline dark:text-zinc-50">
+          <Link href="/register" className="font-medium text-accent hover:text-accent-hover">
             Create one
           </Link>
-        </p>
-      </div>
+        </>
+      }
+    >
       <Suspense>
         <LoginForm />
       </Suspense>
-    </div>
+    </AuthLayout>
   );
 }
