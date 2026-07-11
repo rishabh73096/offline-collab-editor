@@ -1,6 +1,7 @@
 import type { Role } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { roleAtLeast } from "@/lib/authz/roles";
+import { withDbReadRetry } from "@/lib/db/withRetry";
 
 export class DocumentNotFoundError extends Error {}
 export class DocumentForbiddenError extends Error {}
@@ -12,16 +13,18 @@ export class DocumentForbiddenError extends Error {}
  */
 
 export function listDocumentsForUser(userId: string) {
-  return prisma.documentMember.findMany({
-    where: { userId },
-    select: {
-      role: true,
-      document: {
-        select: { id: true, title: true, createdAt: true, updatedAt: true },
+  return withDbReadRetry(() =>
+    prisma.documentMember.findMany({
+      where: { userId },
+      select: {
+        role: true,
+        document: {
+          select: { id: true, title: true, createdAt: true, updatedAt: true },
+        },
       },
-    },
-    orderBy: { document: { updatedAt: "desc" } },
-  });
+      orderBy: { document: { updatedAt: "desc" } },
+    }),
+  );
 }
 
 export function createDocumentForUser(userId: string, title: string) {
@@ -40,15 +43,17 @@ export function createDocumentForUser(userId: string, title: string) {
  * so membership can't be probed by status code.
  */
 export async function getDocumentForMember(userId: string, documentId: string) {
-  const membership = await prisma.documentMember.findUnique({
-    where: { documentId_userId: { documentId, userId } },
-    select: {
-      role: true,
-      document: {
-        select: { id: true, title: true, createdAt: true, updatedAt: true },
+  const membership = await withDbReadRetry(() =>
+    prisma.documentMember.findUnique({
+      where: { documentId_userId: { documentId, userId } },
+      select: {
+        role: true,
+        document: {
+          select: { id: true, title: true, createdAt: true, updatedAt: true },
+        },
       },
-    },
-  });
+    }),
+  );
 
   if (!membership) {
     throw new DocumentNotFoundError(documentId);

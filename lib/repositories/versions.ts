@@ -1,20 +1,23 @@
 import * as Y from "yjs";
 import { prisma } from "@/lib/db/prisma";
 import { getLiveOrFallbackState, restoreLiveState } from "@/lib/collab/collabServerClient";
+import { withDbReadRetry } from "@/lib/db/withRetry";
 
 export class DocumentVersionNotFoundError extends Error {}
 
 export function listVersionsForDocument(documentId: string) {
-  return prisma.documentVersion.findMany({
-    where: { documentId },
-    select: {
-      id: true,
-      label: true,
-      createdAt: true,
-      createdBy: { select: { id: true, name: true, email: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  return withDbReadRetry(() =>
+    prisma.documentVersion.findMany({
+      where: { documentId },
+      select: {
+        id: true,
+        label: true,
+        createdAt: true,
+        createdBy: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  );
 }
 
 export async function captureVersion(documentId: string, userId: string, label?: string) {
