@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { Role } from "@prisma/client";
-import { ArrowLeft, History, Eye, Loader2 } from "lucide-react";
+import { ArrowLeft, History, Users, Eye, Loader2 } from "lucide-react";
 import { useDocument } from "@/hooks/useDocument";
 import { DocumentEditor } from "@/components/editor/DocumentEditor";
 import { SyncStatusBadge } from "@/components/documents/SyncStatusBadge";
@@ -42,6 +42,13 @@ export function DocumentWorkspace({
           <div className="flex flex-wrap items-center gap-2">
             <SyncStatusBadge />
             <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ROLE_STYLES[role]}`}>{role}</span>
+            <Link
+              href={`/documents/${documentId}/share`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:border-border-strong hover:text-ink"
+            >
+              <Users className="h-3.5 w-3.5" aria-hidden="true" />
+              Share
+            </Link>
             <Link
               href={`/documents/${documentId}/history`}
               className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:border-border-strong hover:text-ink"

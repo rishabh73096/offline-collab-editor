@@ -21,10 +21,11 @@ See [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the full architecture decisio
 - **Deterministic, conflict-free merging** — because the document is a CRDT, two people editing offline (or just at the same time) both keep their words when they reconnect. No merge conflicts, no silent data loss.
 - **Version history & safe restore** — capture a labeled snapshot at any time; restoring computes a minimal diff and applies it as a normal, live-broadcast edit (never a raw overwrite), so it can't clobber what other connected collaborators are doing at that moment.
 - **Roles, enforced everywhere** — Owner / Editor / Viewer, checked at the HTTP layer, the WebSocket layer (a Viewer's own edits are accepted onto their socket but silently dropped before they ever reach the shared document), and the database layer (a single repository chokepoint — no route ever queries Prisma directly).
+- **Role management** — an Owner can invite an existing user by email as Editor or Viewer, change a collaborator's role, or remove their access, all from `/documents/[id]/share`. A member can't act on their own membership (no accidental self-demotion/self-removal), and the Owner role itself can't be reassigned or removed through this surface — there's intentionally no ownership-transfer feature yet.
 - **Security-conscious sync** — every payload crossing a trust boundary is size-capped and Zod-validated before it's parsed, specifically to prevent a malformed or oversized sync payload from taking the server down. The collab server also survives a dropped/suspended database connection (see `docs/MODULE_PLAN.md` and the `roomRegistry` tests) instead of crashing.
 - **Authentication** — NextAuth Credentials provider (bcrypt-hashed passwords), plus a separate short-lived signed token that authorizes the WebSocket handshake.
 
-Not yet built (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the plan): a UI for inviting/changing a collaborator's role (today that's one manual step via Prisma Studio — see below), AI summarize/rewrite, and CI.
+Not yet built (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the plan): AI summarize/rewrite and CI.
 
 ## Stack
 
@@ -106,11 +107,12 @@ Two deployables, not one — the Next.js app (Vercel) and the standalone collab 
 
 ### Testing roles (Owner / Editor / Viewer)
 
-Every new document's creator is its Owner. There's no "Invite" UI yet (see Features above), so to test Editor/Viewer behavior today:
+Every new document's creator is its Owner.
 
-1. Register a second account at `/register`.
-2. Run `npx prisma studio`, open the `document_members` table, and add a row: the document's `id`, the second user's `id`, and `role` = `EDITOR` or `VIEWER`.
+1. Register a second account at `/register` (invites require an existing account — there's no email-based signup flow yet).
+2. Back in your first (Owner) account, open the document → **Share** → invite the second account's email as Editor or Viewer.
 3. Sign in as that second account and open the document. A Viewer's editor is read-only in the UI; if you inspect the network traffic, you'll see their edits are also rejected server-side if attempted directly against the WebSocket — the role check isn't just a disabled `<textarea>`.
+4. Back as the Owner, change their role or remove their access from the same **Share** page — both apply instantly.
 
 ---
 
@@ -130,11 +132,10 @@ types/          Shared TypeScript type augmentations
 
 ## Current Status
 
-Implemented and **deployed**: authentication, roles/authorization, local-first storage, the offline sync engine, real-time WebSocket collaboration with CRDT merging, version history with safe restore, and a full visual redesign — live at the URLs above.
+Implemented and **deployed**: authentication, roles/authorization with an in-app management UI, local-first storage, the offline sync engine, real-time WebSocket collaboration with CRDT merging, version history with safe restore, and a full visual redesign — live at the URLs above.
 
 Pending (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) Build Order for the full list):
 
-- **Role management UI** — Owner/Editor/Viewer is fully enforced end-to-end (see Features), but there's no in-app way to invite a collaborator or change their role yet; it's a manual `document_members` row via Prisma Studio (see "Testing roles" above). This is the biggest functional gap.
 - **AI summarize/rewrite** add-on — not started.
 - **CI** — no GitHub Actions workflow yet running typecheck/lint/test on push.
 - **Scripted end-to-end test** — the offline/reconnect/multi-collaborator scenario has been verified manually and via integration tests (`tests/integration/server/`), but not as a single checked-in Playwright e2e script.
