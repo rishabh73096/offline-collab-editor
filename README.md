@@ -5,7 +5,14 @@ A document editor that treats your device as the source of truth, not the server
 > Submission for the House of Edtech Fullstack Developer Assignment 2 (v2.1).
 > **Author:** _TODO: your name_ · **GitHub:** _TODO: your GitHub profile URL_ · **LinkedIn:** _TODO: your LinkedIn profile URL_
 
-See [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the full architecture decisions and module-by-module build plan/status.
+## Live Deployment
+
+- **App:** [offline-collab-editor.vercel.app](https://offline-collab-editor.vercel.app)
+- **Collab server:** hosted on Render — `https://offline-collab-editor.onrender.com`
+
+> Render's free tier spins the collab server down after inactivity. The first real-time connection after a period of idle can take 30–60s to wake it back up (you'll see the sync badge sit on "Connecting…" briefly) — that's the hosting tier, not the app. The app itself never blocks on this; local editing works instantly regardless.
+
+See [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the full architecture decisions and module-by-module build plan/status, or [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) to deploy your own copy.
 
 ## Features
 
@@ -123,4 +130,12 @@ types/          Shared TypeScript type augmentations
 
 ## Current Status
 
-Implemented: authentication, roles/authorization, local-first storage, the offline sync engine, real-time WebSocket collaboration with CRDT merging, version history with safe restore, a full visual redesign, and a deployment guide ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)). See [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for what's next — AI features, CI, and a scripted offline/reconnect end-to-end test.
+Implemented and **deployed**: authentication, roles/authorization, local-first storage, the offline sync engine, real-time WebSocket collaboration with CRDT merging, version history with safe restore, and a full visual redesign — live at the URLs above.
+
+Pending (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) Build Order for the full list):
+
+- **Role management UI** — Owner/Editor/Viewer is fully enforced end-to-end (see Features), but there's no in-app way to invite a collaborator or change their role yet; it's a manual `document_members` row via Prisma Studio (see "Testing roles" above). This is the biggest functional gap.
+- **AI summarize/rewrite** add-on — not started.
+- **CI** — no GitHub Actions workflow yet running typecheck/lint/test on push.
+- **Scripted end-to-end test** — the offline/reconnect/multi-collaborator scenario has been verified manually and via integration tests (`tests/integration/server/`), but not as a single checked-in Playwright e2e script.
+- Fill in the author/GitHub/LinkedIn line at the top of this file before final submission.
