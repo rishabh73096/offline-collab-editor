@@ -17,7 +17,7 @@ See [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the full architecture decisio
 - **Security-conscious sync** — every payload crossing a trust boundary is size-capped and Zod-validated before it's parsed, specifically to prevent a malformed or oversized sync payload from taking the server down. The collab server also survives a dropped/suspended database connection (see `docs/MODULE_PLAN.md` and the `roomRegistry` tests) instead of crashing.
 - **Authentication** — NextAuth Credentials provider (bcrypt-hashed passwords), plus a separate short-lived signed token that authorizes the WebSocket handshake.
 
-Not yet built (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the plan): a UI for inviting/changing a collaborator's role (today that's one manual step via Prisma Studio — see below), AI summarize/rewrite, and deployment/CI.
+Not yet built (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the plan): a UI for inviting/changing a collaborator's role (today that's one manual step via Prisma Studio — see below), AI summarize/rewrite, and CI.
 
 ## Stack
 
@@ -82,6 +82,12 @@ The integration tests under `tests/integration/server/` spin up a real instance 
 
 ---
 
+## Deployment
+
+Two deployables, not one — the Next.js app (Vercel) and the standalone collab server (Railway/Render/Fly), talking to the same Postgres database. Full step-by-step, including which env var goes where and how to actually verify a live deploy works (not just that it builds): [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+---
+
 ## How to try it as a user
 
 1. Go to `/` — the landing page. **Create your account** or **Sign in**.
@@ -117,4 +123,4 @@ types/          Shared TypeScript type augmentations
 
 ## Current Status
 
-Implemented: authentication, roles/authorization, local-first storage, the offline sync engine, real-time WebSocket collaboration with CRDT merging, version history with safe restore, and a full visual redesign. See [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for what's next — AI features, deployment/CI, and a scripted offline/reconnect end-to-end test.
+Implemented: authentication, roles/authorization, local-first storage, the offline sync engine, real-time WebSocket collaboration with CRDT merging, version history with safe restore, a full visual redesign, and a deployment guide ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)). See [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for what's next — AI features, CI, and a scripted offline/reconnect end-to-end test.

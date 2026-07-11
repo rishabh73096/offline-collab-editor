@@ -2,7 +2,9 @@ import { prisma } from "../lib/db/prisma";
 import { createPrismaPersistence } from "./persistence";
 import { createCollabServer } from "./createCollabServer";
 
-const PORT = Number(process.env.COLLAB_SERVER_PORT ?? 1234);
+// Most hosts (Railway, Render, Fly) inject a dynamic PORT the process must
+// bind to; COLLAB_SERVER_PORT is the local-dev-only override.
+const PORT = Number(process.env.PORT ?? process.env.COLLAB_SERVER_PORT ?? 1234);
 
 // Defense in depth on top of the retry/catch handling already in
 // roomRegistry.ts and connection.ts: this is a long-running process serving
@@ -20,4 +22,5 @@ process.on("uncaughtException", (error) => {
 const { httpServer } = createCollabServer(createPrismaPersistence(prisma));
 
 httpServer.listen(PORT, () => {
+  console.log(`[collab] listening on :${PORT}`);
 });
