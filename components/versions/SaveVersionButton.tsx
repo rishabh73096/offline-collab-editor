@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Save, Check, Loader2, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
 
 export function SaveVersionButton({ documentId }: { documentId: string }) {
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -18,9 +19,11 @@ export function SaveVersionButton({ documentId }: { documentId: string }) {
         throw new Error("Request failed");
       }
       setStatus("saved");
+      toast.success("Version saved");
       setTimeout(() => setStatus("idle"), 2000);
     } catch {
       setStatus("error");
+      toast.error("Could not save version");
       setTimeout(() => setStatus("idle"), 3000);
     }
   }

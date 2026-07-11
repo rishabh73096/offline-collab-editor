@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { History, RotateCcw, Loader2, TriangleAlert, User } from "lucide-react";
+import { toast } from "sonner";
 
 interface VersionListItem {
   id: string;
@@ -21,7 +22,7 @@ async function fetchVersions(documentId: string): Promise<VersionListItem[]> {
 
 export function VersionHistoryPanel({ documentId, canRestore }: { documentId: string; canRestore: boolean }) {
   const [versions, setVersions] = useState<VersionListItem[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
@@ -35,7 +36,8 @@ export function VersionHistoryPanel({ documentId, canRestore }: { documentId: st
       })
       .catch(() => {
         if (!cancelled) {
-          setError("Could not load version history.");
+          setLoadError("Could not load version history.");
+          toast.error("Could not load version history");
         }
       });
     return () => {
@@ -45,7 +47,6 @@ export function VersionHistoryPanel({ documentId, canRestore }: { documentId: st
 
   async function handleRestore(versionId: string) {
     setRestoringId(versionId);
-    setError(null);
     try {
       const response = await fetch(`/api/documents/${documentId}/versions/${versionId}/restore`, {
         method: "POST",
@@ -55,14 +56,17 @@ export function VersionHistoryPanel({ documentId, canRestore }: { documentId: st
       }
       setConfirmingId(null);
       setVersions(await fetchVersions(documentId));
+      toast.success("Document restored");
     } catch {
-      setError("Restore failed. The collaboration server may be unavailable — try again in a moment.");
+      toast.error("Restore failed", {
+        description: "The collaboration server may be unavailable — try again in a moment.",
+      });
     } finally {
       setRestoringId(null);
     }
   }
 
-  if (versions === null && !error) {
+  if (versions === null && !loadError) {
     return (
       <div className="flex items-center gap-2 text-sm text-ink-faint">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -73,10 +77,10 @@ export function VersionHistoryPanel({ documentId, canRestore }: { documentId: st
 
   return (
     <div className="flex flex-col gap-4">
-      {error && (
+      {loadError && (
         <p role="alert" className="flex items-center gap-2 rounded-lg bg-brick-soft px-3 py-2 text-sm text-brick">
           <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
-          {error}
+          {loadError}
         </p>
       )}
 

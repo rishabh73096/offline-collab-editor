@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { User, Mail, Lock, TriangleAlert } from "lucide-react";
+import { User, Mail, Lock } from "lucide-react";
+import { toast } from "sonner";
 import { registerSchema, type RegisterInput } from "@/lib/validation/auth";
 
 export function RegisterForm() {
   const router = useRouter();
-  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -19,27 +18,42 @@ export function RegisterForm() {
   } = useForm<RegisterInput>({ resolver: zodResolver(registerSchema) });
 
   async function onSubmit(values: RegisterInput) {
-    setFormError(null);
+    let outcome: "signed-in" | "no-session";
+    try {
+      outcome = await toast
+        .promise(
+          async () => {
+            const response = await fetch("/api/auth/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(values),
+            });
 
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
+            if (!response.ok) {
+              const body = await response.json().catch(() => null);
+              throw new Error(body?.error ?? "Could not create account");
+            }
 
-    if (!response.ok) {
-      const body = await response.json().catch(() => null);
-      setFormError(body?.error ?? "Could not create account");
+            const signInResult = await signIn("credentials", {
+              email: values.email,
+              password: values.password,
+              redirect: false,
+            });
+
+            return signInResult?.error ? "no-session" : "signed-in";
+          },
+          {
+            loading: "Creating your account…",
+            success: (result) => (result === "signed-in" ? "Account created" : "Account created — sign in to continue"),
+            error: (error) => (error instanceof Error ? error.message : "Could not create account"),
+          },
+        )
+        .unwrap();
+    } catch {
       return;
     }
 
-    const signInResult = await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      redirect: false,
-    });
-
-    if (signInResult?.error) {
+    if (outcome === "no-session") {
       router.push("/login");
       return;
     }
@@ -104,13 +118,6 @@ export function RegisterForm() {
         {errors.password && <p className="text-sm text-brick">{errors.password.message}</p>}
         <p className="text-xs text-ink-faint">At least 8 characters.</p>
       </div>
-
-      {formError && (
-        <p role="alert" className="flex items-center gap-2 rounded-lg bg-brick-soft px-3 py-2 text-sm text-brick">
-          <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
-          {formError}
-        </p>
-      )}
 
       <button
         type="submit"

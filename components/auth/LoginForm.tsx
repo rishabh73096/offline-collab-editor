@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail, Lock, TriangleAlert } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
+import { toast } from "sonner";
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -20,11 +19,23 @@ export function LoginForm() {
   } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
 
   async function onSubmit(values: LoginInput) {
-    setFormError(null);
-    const result = await signIn("credentials", { ...values, redirect: false });
-
-    if (result?.error) {
-      setFormError("Invalid email or password");
+    try {
+      await toast
+        .promise(
+          async () => {
+            const result = await signIn("credentials", { ...values, redirect: false });
+            if (result?.error) {
+              throw new Error("Invalid email or password");
+            }
+          },
+          {
+            loading: "Signing in…",
+            success: "Welcome back",
+            error: (error) => (error instanceof Error ? error.message : "Could not sign in"),
+          },
+        )
+        .unwrap();
+    } catch {
       return;
     }
 
@@ -69,13 +80,6 @@ export function LoginForm() {
         </div>
         {errors.password && <p className="text-sm text-brick">{errors.password.message}</p>}
       </div>
-
-      {formError && (
-        <p role="alert" className="flex items-center gap-2 rounded-lg bg-brick-soft px-3 py-2 text-sm text-brick">
-          <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
-          {formError}
-        </p>
-      )}
 
       <button
         type="submit"

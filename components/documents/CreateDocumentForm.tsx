@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { FilePlus2 } from "lucide-react";
+import { toast } from "sonner";
 
 const createDocumentSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
@@ -15,7 +15,6 @@ type FormValues = z.infer<typeof createDocumentSchema>;
 
 export function CreateDocumentForm() {
   const router = useRouter();
-  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -25,16 +24,29 @@ export function CreateDocumentForm() {
   } = useForm<FormValues>({ resolver: zodResolver(createDocumentSchema) });
 
   async function onSubmit(values: FormValues) {
-    setFormError(null);
-    const response = await fetch("/api/documents", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
+    try {
+      await toast
+        .promise(
+          async () => {
+            const response = await fetch("/api/documents", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(values),
+            });
 
-    if (!response.ok) {
-      const body = await response.json().catch(() => null);
-      setFormError(body?.error ?? "Could not create document");
+            if (!response.ok) {
+              const body = await response.json().catch(() => null);
+              throw new Error(body?.error ?? "Could not create document");
+            }
+          },
+          {
+            loading: "Creating document…",
+            success: `"${values.title}" created`,
+            error: (error) => (error instanceof Error ? error.message : "Could not create document"),
+          },
+        )
+        .unwrap();
+    } catch {
       return;
     }
 
@@ -57,11 +69,6 @@ export function CreateDocumentForm() {
           {...register("title")}
         />
         {errors.title && <p className="text-sm text-brick">{errors.title.message}</p>}
-        {formError && (
-          <p role="alert" className="text-sm text-brick">
-            {formError}
-          </p>
-        )}
       </div>
       <button
         type="submit"
