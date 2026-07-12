@@ -1,9 +1,20 @@
 # Marginal — a local-first collaborative document editor
 
+[![CI](https://github.com/rishabh73096/offline-collab-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/rishabh73096/offline-collab-editor/actions/workflows/ci.yml)
+
 A document editor that treats your device as the source of truth, not the server. Open, edit, and close documents with **zero network requests blocking the UI**, then reconcile automatically — via a CRDT, not last-write-wins — the moment you're back online.
 
 > Submission for the House of Edtech Fullstack Developer Assignment 2 (v2.1).
-> **Author:** _TODO: your name_ · **GitHub:** _TODO: your GitHub profile URL_ · **LinkedIn:** _TODO: your LinkedIn profile URL_
+> **Author:** Rishabh Tiwari · **GitHub:** [rishabh73096](https://github.com/rishabh73096) · **LinkedIn:** [rishabhtiwari73](https://www.linkedin.com/in/rishabhtiwari73/)
+
+## Highlights
+
+- **Two independently-deployed services** (Next.js on Vercel, a standalone WebSocket server on Render) coordinating over a hand-rolled realtime sync protocol — not a single-server toy demo.
+- **CRDT-based conflict-free merging** (Yjs) — offline edits never produce a "conflict," they converge deterministically. Proven by a scripted end-to-end test that actually takes a browser offline mid-edit and checks both sides reconcile, not just claimed in a bullet point.
+- **Roles enforced at three independent layers** — the HTTP API, the WebSocket server, and a single database repository chokepoint — not just a disabled button in the UI.
+- **98 automated tests** (unit + integration) plus a full Playwright e2e run, both wired into CI on every push, including a job that spins up a disposable Postgres container.
+- **AI-assisted summarize/rewrite** (Gemini) with a staleness guard: a rewrite that streams for a few seconds re-checks the selected text hasn't changed underneath it before applying, instead of risking silent corruption.
+- **Production-grade resilience, not just a happy path** — retry logic tuned to the actual failure mode (safe to retry a dropped connection, never a write that might have already committed), payload size caps enforced before parsing, and per-connection error isolation so one malformed message can't take down every collaborator on every document.
 
 ## Live Deployment
 
@@ -24,8 +35,9 @@ See [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the full architecture decisio
 - **Role management** — an Owner can invite an existing user by email as Editor or Viewer, change a collaborator's role, or remove their access, all from `/documents/[id]/share`. A member can't act on their own membership (no accidental self-demotion/self-removal), and the Owner role itself can't be reassigned or removed through this surface — there's intentionally no ownership-transfer feature yet.
 - **Security-conscious sync** — every payload crossing a trust boundary is size-capped and Zod-validated before it's parsed, specifically to prevent a malformed or oversized sync payload from taking the server down. The collab server also survives a dropped/suspended database connection (see `docs/MODULE_PLAN.md` and the `roomRegistry` tests) instead of crashing.
 - **Authentication** — NextAuth Credentials provider (bcrypt-hashed passwords), plus a separate short-lived signed token that authorizes the WebSocket handshake.
+- **AI summarize/rewrite** — Gemini via the Vercel AI SDK. Summarize is read-only and open to any role; rewriting a selection is Editor+ only and streams a preview you explicitly Apply or Discard, never applied silently. Guarded against the selected text changing underneath a rewrite that's still streaming — see `lib/ai/applyRewrite.ts`.
 
-Not yet built (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the plan): AI summarize/rewrite.
+See [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for what's intentionally still out of scope (ownership transfer, inviting someone who doesn't have an account yet, a compiled build step for the collab server instead of running TypeScript directly via `tsx`).
 
 ## Stack
 
@@ -35,8 +47,9 @@ Not yet built (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the plan): AI 
 - **Local-first storage:** Dexie (IndexedDB)
 - **CRDT / realtime collaboration:** Yjs + a standalone WebSocket server (`server/`)
 - **Validation:** Zod
+- **AI:** Vercel AI SDK + Google Gemini (`gemini-flash-latest`) for summarize/rewrite
 - **UI:** Tailwind CSS v4, lucide-react icons, a custom "paper & ink" design system (see `app/globals.css`)
-- **Testing:** Vitest (unit + integration, 89 tests), Playwright (a scripted e2e test covering the offline/reconnect/multi-collaborator scenario — `tests/e2e/`)
+- **Testing:** Vitest (unit + integration, 98 tests), Playwright (a scripted e2e test covering the offline/reconnect/multi-collaborator scenario — `tests/e2e/`)
 - **CI:** GitHub Actions (`.github/workflows/ci.yml`) — typecheck, lint, unit/integration tests, and a production build on every push/PR, plus a separate job running the e2e suite against an ephemeral Postgres service container
 
 ---
@@ -83,7 +96,7 @@ The app works without the collab server running — you just won't get real-time
 ```bash
 npx tsc --noEmit          # typecheck
 npm run lint               # ESLint
-npm run test                # Vitest — unit + integration (89 tests)
+npm run test                # Vitest — unit + integration (98 tests)
 npm run build                # production build
 npx playwright test          # e2e — needs a real (even local/throwaway) Postgres
 ```
@@ -108,6 +121,7 @@ Two deployables, not one — the Next.js app (Vercel) and the standalone collab 
 4. **See offline-first for real:** open DevTools → Network tab → set throttling to "Offline", keep typing, then set it back to "Online" (or restart the collab server if you stopped it). The sync badge in the editor header goes `Offline → Connecting… → Synced`, and your offline edits are there without you doing anything.
 5. **See real-time collaboration:** open the same document URL in a second browser (or an incognito window, signed in as a second account — see below for how to give that account access). Type in one, watch it appear in the other.
 6. **Version history:** click **Save version** in the editor toolbar, keep editing, then open **History**. Pick an earlier version and **Restore** — the confirmation step exists because restoring is a shared, live-visible action, not a personal undo.
+7. **AI:** click **Summarize** for a read-only summary of the current document, or select some text and click **Rewrite selection** — pick a preset ("Make it more formal", "Shorten it", …) or type your own instruction. It streams a preview; nothing lands in the document until you click **Apply**.
 
 ### Testing roles (Owner / Editor / Viewer)
 
@@ -137,9 +151,8 @@ types/          Shared TypeScript type augmentations
 
 ## Current Status
 
-Implemented and **deployed**: authentication, roles/authorization with an in-app management UI, local-first storage, the offline sync engine, real-time WebSocket collaboration with CRDT merging, version history with safe restore, and a full visual redesign — live at the URLs above.
+Implemented, tested, and **deployed**, live at the URLs above: authentication, roles/authorization with an in-app management UI, local-first storage, the offline sync engine, real-time WebSocket collaboration with CRDT merging, version history with safe restore, a full visual redesign, and CI/CD.
 
-Pending (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) Build Order for the full list):
+**AI summarize/rewrite is implemented and unit-tested** (`lib/ai/`, `app/api/documents/[id]/ai/`) but needs `GOOGLE_GENERATIVE_AI_API_KEY` set on the deployment to go live there — works today when run locally with a key in `.env.local`.
 
-- **AI summarize/rewrite** add-on — not started.
-- Fill in the author/GitHub/LinkedIn line at the top of this file before final submission.
+Intentionally out of scope for now (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the reasoning): ownership transfer, inviting a collaborator who doesn't have an account yet, and a compiled production build for the collab server.
