@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # These are NOT real credentials — the test suite never opens a real
+  # database connection (every repository test mocks Prisma; the collab
+  # server integration tests use an in-memory persistence fake), and the
+  # secrets are never verified against anything in CI. They exist only to
+  # satisfy `prisma generate`'s "env var must be defined" check and
+  # next-auth's config validation at build time. Safe to keep in plain
+  # `env:` rather than repo secrets.
+  DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+  DIRECT_DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+  NEXTAUTH_SECRET: "ci-placeholder-secret-not-a-real-credential-aaaa"
+  NEXTAUTH_URL: "http://localhost:3000"
+  COLLAB_JWT_SECRET: "ci-placeholder-secret-not-a-real-credential-bbbb"
+  COLLAB_INTERNAL_SECRET: "ci-placeholder-secret-not-a-real-credential-cccc"
+  COLLAB_INTERNAL_URL: "http://localhost:1234"
+  NEXT_PUBLIC_COLLAB_WS_URL: "ws://localhost:1234"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Also runs `prisma generate` via the postinstall script — the same
+      # mechanism every deploy target (Vercel, Railway) relies on, so this
+      # doubles as a check that postinstall itself still works.
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+  e2e:
+    needs: verify
+    runs-on: ubuntu-latest
+    # Unlike `verify`, this job needs a real Postgres — the e2e test drives
+    # the actual app (both the Next.js server and the standalone collab
+    # server, per docs/DEPLOYMENT.md) through a real browser, registering
+    # real accounts and creating a real document. An ephemeral service
+    # container keeps that entirely disposable; nothing here touches Neon.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/e2e"
+      DIRECT_DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/e2e"
+      NEXTAUTH_SECRET: "ci-e2e-placeholder-secret-not-a-real-credential-aaaa"
+      NEXTAUTH_URL: "http://localhost:3100"
+      COLLAB_JWT_SECRET: "ci-e2e-placeholder-secret-not-a-real-credential-bbbb"
+      COLLAB_INTERNAL_SECRET: "ci-e2e-placeholder-secret-not-a-real-credential-cccc"
+      COLLAB_INTERNAL_URL: "http://localhost:3101"
+      NEXT_PUBLIC_COLLAB_WS_URL: "ws://localhost:3101"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
