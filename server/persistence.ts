@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { prisma as PrismaInstance } from "../lib/db/prisma";
 
 /**
  * Abstracted so the room registry can be unit-tested with an in-memory
@@ -9,7 +9,7 @@ export interface DocumentPersistence {
   save(documentId: string, state: Uint8Array): Promise<void>;
 }
 
-export function createPrismaPersistence(prisma: PrismaClient): DocumentPersistence {
+export function createPrismaPersistence(prisma: typeof PrismaInstance): DocumentPersistence {
   return {
     async load(documentId) {
       const record = await prisma.document.findUnique({

@@ -74,7 +74,28 @@ export async function startSyncEngine(documentId: string, ydoc: Y.Doc): Promise<
   };
   const refreshTimer = setInterval(refreshToken, TOKEN_REFRESH_INTERVAL_MS);
 
-  const handleOnline = () => provider.connect();
+  const handleOnline = () => {
+    // Chromium (and real networks) can leave the old WebSocket object
+    // sitting there appearing "open" for a while after connectivity drops —
+    // y-websocket only notices via its own ~30s staleness watchdog. Force
+    // it closed so reconnection doesn't wait on that, and fetch a fresh
+    // token before reconnecting: the collab token is short-lived (60s), so
+    // if the client was offline longer than that, retrying with the token
+    // already in provider.params would just get rejected by the server and
+    // sit there until the next scheduled refresh happened to line up.
+    provider.disconnect();
+    fetchCollabToken(documentId)
+      .then((freshToken) => {
+        provider.params = { token: freshToken };
+      })
+      .catch(() => {
+        // Fall back to whatever token is already set — better to retry with
+        // a possibly-stale token than not retry at all.
+      })
+      .finally(() => {
+        provider.connect();
+      });
+  };
   const handleOffline = () => setStatus("offline");
   if (typeof window !== "undefined") {
     window.addEventListener("online", handleOnline);
