@@ -25,7 +25,7 @@ See [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the full architecture decisio
 - **Security-conscious sync** — every payload crossing a trust boundary is size-capped and Zod-validated before it's parsed, specifically to prevent a malformed or oversized sync payload from taking the server down. The collab server also survives a dropped/suspended database connection (see `docs/MODULE_PLAN.md` and the `roomRegistry` tests) instead of crashing.
 - **Authentication** — NextAuth Credentials provider (bcrypt-hashed passwords), plus a separate short-lived signed token that authorizes the WebSocket handshake.
 
-Not yet built (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the plan): AI summarize/rewrite and CI.
+Not yet built (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the plan): AI summarize/rewrite.
 
 ## Stack
 
@@ -36,7 +36,8 @@ Not yet built (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) for the plan): AI 
 - **CRDT / realtime collaboration:** Yjs + a standalone WebSocket server (`server/`)
 - **Validation:** Zod
 - **UI:** Tailwind CSS v4, lucide-react icons, a custom "paper & ink" design system (see `app/globals.css`)
-- **Testing:** Vitest (unit + integration), Playwright (installed, used for manual UI verification; scripted e2e not yet checked in)
+- **Testing:** Vitest (unit + integration, 89 tests), Playwright (a scripted e2e test covering the offline/reconnect/multi-collaborator scenario — `tests/e2e/`)
+- **CI:** GitHub Actions (`.github/workflows/ci.yml`) — typecheck, lint, unit/integration tests, and a production build on every push/PR, plus a separate job running the e2e suite against an ephemeral Postgres service container
 
 ---
 
@@ -82,11 +83,14 @@ The app works without the collab server running — you just won't get real-time
 ```bash
 npx tsc --noEmit          # typecheck
 npm run lint               # ESLint
-npm run test                # Vitest — unit + integration (currently 70+ tests)
+npm run test                # Vitest — unit + integration (89 tests)
 npm run build                # production build
+npx playwright test          # e2e — needs a real (even local/throwaway) Postgres
 ```
 
 The integration tests under `tests/integration/server/` spin up a real instance of the collab server (in-process, ephemeral port, in-memory persistence fake) and drive it with real WebSocket clients — they cover role-gated writes, malformed-payload handling, and surviving a persistently failing database, without needing your real Postgres.
+
+`npx playwright test` is the one exception that needs a real database (and both dev servers, which it starts for you — see `playwright.config.ts`): `tests/e2e/collaboration.spec.ts` registers two real accounts, invites one into the other's document, and drives an actual offline → concurrent-edit → reconnect cycle through a real browser, asserting both sides converge. It cleans up the users/documents it creates in an `afterAll` hook.
 
 ---
 
@@ -118,7 +122,8 @@ Every new document's creator is its Owner.
 
 ## Project Structure
 
-```
+```text
+.github/        GitHub Actions CI workflow
 app/            Next.js routes: landing page, auth pages, document UI, API routes
 components/     UI components (brand, marketing, auth, documents, editor, versions)
 docs/           Architecture and planning docs
@@ -126,7 +131,7 @@ hooks/          Client hooks (e.g. useDocument — local hydration + sync engine
 lib/            Auth, authz, db, validation, security, repositories, sync protocol
 prisma/         Database schema and migrations
 server/         Standalone WebSocket collaboration server (separate deploy target)
-tests/          Unit and integration tests
+tests/          Unit, integration, and e2e tests
 types/          Shared TypeScript type augmentations
 ```
 
@@ -137,6 +142,4 @@ Implemented and **deployed**: authentication, roles/authorization with an in-app
 Pending (see [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) Build Order for the full list):
 
 - **AI summarize/rewrite** add-on — not started.
-- **CI** — no GitHub Actions workflow yet running typecheck/lint/test on push.
-- **Scripted end-to-end test** — the offline/reconnect/multi-collaborator scenario has been verified manually and via integration tests (`tests/integration/server/`), but not as a single checked-in Playwright e2e script.
 - Fill in the author/GitHub/LinkedIn line at the top of this file before final submission.
