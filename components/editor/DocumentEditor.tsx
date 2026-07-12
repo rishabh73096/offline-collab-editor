@@ -4,7 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import type * as Y from "yjs";
 import { applyTextareaEdit } from "@/lib/collab/textSync";
 
-export function DocumentEditor({ ytext, readOnly }: { ytext: Y.Text; readOnly: boolean }) {
+export function DocumentEditor({
+  ytext,
+  readOnly,
+  textareaRef,
+}: {
+  ytext: Y.Text;
+  readOnly: boolean;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+}) {
   const [value, setValue] = useState(() => ytext.toString());
   const isLocalEdit = useRef(false);
 
@@ -33,6 +41,7 @@ export function DocumentEditor({ ytext, readOnly }: { ytext: Y.Text; readOnly: b
   return (
     <div className="rounded-2xl border border-border bg-surface shadow-sm focus-within:border-accent focus-within:ring-2 focus-within:ring-accent-soft">
       <textarea
+        ref={textareaRef}
         value={value}
         onChange={handleChange}
         readOnly={readOnly}

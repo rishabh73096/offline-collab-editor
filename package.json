@@ -14,8 +14,10 @@
     "server:start": "tsx server/index.ts"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.12",
     "@hookform/resolvers": "^5.4.0",
     "@prisma/client": "^6.19.3",
+    "ai": "^7.0.22",
     "bcryptjs": "^3.0.3",
     "dexie": "^4.4.4",
     "jose": "^6.2.3",

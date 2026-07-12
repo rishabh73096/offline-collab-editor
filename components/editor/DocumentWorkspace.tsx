@@ -1,10 +1,12 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import type { Role } from "@prisma/client";
 import { ArrowLeft, History, Users, Eye, Loader2 } from "lucide-react";
 import { useDocument } from "@/hooks/useDocument";
 import { DocumentEditor } from "@/components/editor/DocumentEditor";
+import { AiToolbar } from "@/components/editor/AiToolbar";
 import { SyncStatusBadge } from "@/components/documents/SyncStatusBadge";
 import { SaveVersionButton } from "@/components/versions/SaveVersionButton";
 
@@ -24,6 +26,7 @@ export function DocumentWorkspace({
   role: Role;
 }) {
   const { ytext, isReady } = useDocument(documentId);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   return (
     <div className="flex flex-1 flex-col px-6 py-8 sm:px-10">
@@ -71,7 +74,8 @@ export function DocumentWorkspace({
                 You have view-only access to this document.
               </p>
             )}
-            <DocumentEditor ytext={ytext} readOnly={role === "VIEWER"} />
+            <AiToolbar documentId={documentId} ytext={ytext} textareaRef={textareaRef} canRewrite={role !== "VIEWER"} />
+            <DocumentEditor ytext={ytext} readOnly={role === "VIEWER"} textareaRef={textareaRef} />
             <p className="text-xs text-ink-faint">Stored locally on this device. Works offline.</p>
           </>
         ) : (
